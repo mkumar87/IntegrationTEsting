@@ -8,7 +8,7 @@ public class LocalTesting {
 
 		String ordVer = "01";
 		String orderNumber = "56658999";
-		String orderId = (orderNumber == null) ? orderNumber : orderNumber.trim();
+		String orderId = (orderNumber == null) ? orderNumber : orderNumber.trim()
 		
 		if(ordVer == null || ordVer.length() <=0)
 		{
