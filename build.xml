@@ -21,5 +21,4 @@
     <target name="run">
         <java jar="build/jar/IntegrationTEsting.jar" fork="true"/>
     </target>
-
 </project>
