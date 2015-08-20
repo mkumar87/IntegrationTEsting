@@ -4,12 +4,12 @@
         <delete dir="build"/>
     </target>
 
-    <target name="test">
+    <target name="compile">
         <mkdir dir="build/classes"/>
         <javac srcdir="src" destdir="build/classes"/>
     </target>
 
-    <target name="jar">
+    <target name="jar" depends="compile">
         <mkdir dir="build/jar"/>
         <jar destfile="build/jar/IntegrationTEsting.jar" basedir="build/classes">
             <manifest>
@@ -18,7 +18,7 @@
         </jar>
     </target>
 
-    <target name="run">
+    <target name="test" depends="jar">
         <java jar="build/jar/IntegrationTEsting.jar" fork="true"/>
     </target>
 </project>
