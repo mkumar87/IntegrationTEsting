@@ -1,24 +1,166 @@
-<project>
+<?xml version="1.0"?>
+<project name="PcGUI" default="archive" basedir=".">
+    <description>PcGUI Project</description>
+	<import file="buildTest.xml" />
+    <!-- Global vars -->
+    <property environment="env" />
+    <property name="project.name" value="PcGUI" />
+    <property name="PcGUI.location" value="." />
+    <property name="archive.name" value="${project.name}.war" />
+    <property name="staging.dir" value="${PcGUI.location}/.staging" />
 
-    <target name="clean">
-        <delete dir="build"/>
+    <path id="project.classpath">
+        <pathelement location="build/classes" />
+        <fileset dir="WebContent/WEB-INF/lib/">
+            <include name="*.jar" />
+        </fileset>
+        <fileset dir="build_libs/">
+            <include name="*.jar" />
+        </fileset>
+    </path>
+
+    <!-- TaskDefs -->
+    <path id="buildtimestamp.classpath">
+        <pathelement location="build_libs/timeStamper.jar" />
+    </path>
+
+    <taskdef name="buildtimestamp" classname="timeStamper.Stamp">
+        <classpath refid="buildtimestamp.classpath" />
+    </taskdef>
+	
+    <taskdef name="buildinfo" classname="buildInfo.BuildInfo">
+        <classpath refid="buildtimestamp.classpath" />
+    </taskdef>
+	
+    <taskdef name="manifestWriter" classname="manifest.ManifestWriter">
+        <classpath refid="buildtimestamp.classpath" />
+    </taskdef>
+
+    <path id="yui-compressor.classpath">
+        <pathelement location="build_libs/yui-compressor-ant-task-0.5.jar" />
+        <pathelement location="build_libs/yuicompressor-2.4.7.jar" />
+    </path>
+
+    <taskdef name="yui-compressor" classname="net.noha.tools.ant.yuicompressor.tasks.YuiCompressorTask">
+        <classpath refid="yui-compressor.classpath" />
+    </taskdef>
+
+    <!-- Targets -->
+
+	<target name="unit-test" depends="build-test, run-junit-tests,create-junit-report" />
+	
+    <target name="init">
+        <property name="init.executed" value="true" />
+        <mkdir dir="build/classes" />
     </target>
 
     <target name="compile">
-        <mkdir dir="build/classes"/>
-        <javac srcdir="src" destdir="build/classes"/>
+        <echo message="Compiling ${ant.project.name} using ${ant.file}" />
+        <javac destdir="build/classes" includeantruntime="false" nowarn="on" includes="**/*.java" debug="true">
+            <src path="src" />
+            <classpath refid="project.classpath" />
+        </javac>
     </target>
 
-    <target name="jar" depends="compile">
-        <mkdir dir="build/jar"/>
-        <jar destfile="build/jar/IntegrationTEsting.jar" basedir="build/classes">
-            <manifest>
-                <attribute name="Main-Class" value="LocalTesting"/>
-            </manifest>
-        </jar>
+    <target name="mergeRegional">
+        <echo message="Calling Regional build.xml" />
+        <ant dir="Regional" antfile="build.xml" inheritall="false" target="move" />
+    </target>
+    	
+    <target name="compress">
+        <yui-compressor warn="false" excludes="WebContent/Spec" fromDir="WebContent" toDir="WebContent" jsSuffix=".min.js" cssSuffix=".min.css">
+        	<exclude name="js/**/*spec*.js"/>
+        	<include name="js/**/*.js" />
+            <exclude name="js/**/*.min.js"/>
+            <include name="css/**/*.css" />
+            <exclude name="css/**/*.min.css"/>
+        </yui-compressor>            
+    </target>
+	
+    <target name="stage" depends="init, compile, compress" description=" copies all of project's resources and build artifacts into a form that's ready for archive creation; staging directory can be overridden via the &quot;staging.dir&quot; property">
+        <delete dir="${staging.dir}" quiet="true" />
+        <mkdir dir="${staging.dir}" />
+        <copy todir="${staging.dir}">
+            <fileset dir="WebContent">
+                <include name="**" />
+            </fileset>
+        </copy>
+        <copy todir="${staging.dir}/WEB-INF/">
+            <fileset dir="build">
+                <include name="**" />
+            </fileset>
+        </copy>
+        <copy todir="${staging.dir}/WEB-INF/classes">
+            <fileset dir="properties">
+                <include name="**" />
+            </fileset>
+        </copy>
+        <buildtimestamp file="${staging.dir}/WEB-INF/jsp/_build_.jspf" />
+        <buildinfo file="${staging.dir}/WEB-INF/jsp/_build_info_.jspf" tagFile="${PcGUI.location}/CVS/Tag"/>
+        <!-- <manifestWriter file="${staging.dir}/META-INF/MANIFEST.MF"/> -->
     </target>
 
-    <target name="test" depends="jar">
-        <java jar="build/jar/IntegrationTEsting.jar" fork="true"/>
+    <target name="archive" depends="clean,stage" description=" creates an archive containing all projects's resources and build artifacts; archive name and location can be overridden via the &quot;archive.path&quot; property">
+        <mkdir dir="dist" />
+        <zip destfile="dist/${archive.name}" encoding="UTF8" whenempty="create">
+            <fileset dir="${staging.dir}" />
+        </zip>
     </target>
+	
+    <target name="archiveAH" description=" creates an archive containing all projects's resources and build artifacts; archive name and location can be overridden via the &quot;archive.path&quot; property">
+        <mkdir dir="dist" />
+        <zip destfile="dist/${project.name}_AH.war" encoding="UTF8" whenempty="create">
+            <fileset dir="${staging.dir}" />
+        </zip>
+    </target>
+    <target name="archivePROD" description=" creates an archive containing all projects's resources and build artifacts; archive name and location can be overridden via the &quot;archive.path&quot; property">
+        <mkdir dir="dist" />
+        <zip destfile="dist/${project.name}_PROD.war" encoding="UTF8" whenempty="create">
+            <fileset dir="${staging.dir}" />
+        </zip>
+    </target>
+
+    <target name="archiveTF" description=" creates an archive containing all projects's resources and build artifacts; archive name and location can be overridden via the &quot;archive.path&quot; property">
+        <mkdir dir="dist" />
+        <zip destfile="dist/${project.name}_TF.war" encoding="UTF8" whenempty="create">
+            <fileset dir="${staging.dir}" />
+        </zip>
+    </target>
+    <target name="archiveTH" description=" creates an archive containing all projects's resources and build artifacts; archive name and location can be overridden via the &quot;archive.path&quot; property">
+        <mkdir dir="dist" />
+        <zip destfile="dist/${project.name}_TH.war" encoding="UTF8" whenempty="create">
+            <fileset dir="${staging.dir}" />
+        </zip>
+    </target>
+    <target name="archiveAF" description=" creates an archive containing all projects's resources and build artifacts; archive name and location can be overridden via the &quot;archive.path&quot; property">
+        <mkdir dir="dist" />
+        <zip destfile="dist/${project.name}_AF.war" encoding="UTF8" whenempty="create">
+            <fileset dir="${staging.dir}" />
+        </zip>
+    </target>
+    <target name="archiveAD" description=" creates an archive containing all projects's resources and build artifacts; archive name and location can be overridden via the &quot;archive.path&quot; property">
+        <mkdir dir="dist" />
+        <zip destfile="dist/${project.name}_AD.war" encoding="UTF8" whenempty="create">
+            <fileset dir="${staging.dir}" />
+        </zip>
+    </target>
+    <target name="archiveAE" description=" creates an archive containing all projects's resources and build artifacts; archive name and location can be overridden via the &quot;archive.path&quot; property">
+        <mkdir dir="dist" />
+        <zip destfile="dist/${project.name}_AE.war" encoding="UTF8" whenempty="create">
+            <fileset dir="${staging.dir}" />
+        </zip>
+    </target>
+    <target name="archiveTD" description=" creates an archive containing all projects's resources and build artifacts; archive name and location can be overridden via the &quot;archive.path&quot; property">
+        <mkdir dir="dist" />
+        <zip destfile="dist/${project.name}_TD.war" encoding="UTF8" whenempty="create">
+            <fileset dir="${staging.dir}" />
+        </zip>
+    </target>
+
+    <target name="clean">
+        <delete dir="${staging.dir}" quiet="true" />
+        <delete dir="build/classes" />
+        <delete file="${project.name}.war" />
+    </target>
+	
 </project>
